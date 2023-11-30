@@ -167,8 +167,41 @@ def isRay(obj):
 
 def plot_xy(absorber):
     import numpy as np
+    import matplotlib
+    matplotlib.use('Qt5Agg')
+
+    from matplotlib.backends import qt_compat
     import matplotlib.pyplot as plt
+    from matplotlib.backend_tools import ToolBase, ToolToggleBase
+
+    plt.rcParams['toolbar'] = 'toolmanager'
     
+    class GroupHideTool(ToolToggleBase):        
+
+        def __init__(self, *args, gid, **kwargs):
+            self.gid = gid
+            super().__init__(*args, **kwargs)
+
+    class SaveFileDialogTool(ToolBase):
+        """Open a file save dialog."""
+        default_keymap = '.txt'
+        description = 'Save to ".txt" file'
+
+        def trigger(self, *args, **kwargs):
+                        
+            file, _ = qt_compat._getSaveFileName(fig.canvas.parent(),
+                caption = "Save a txt", filter ='*.txt')
+            
+            if file:
+                with open(file, 'w') as file:
+                    for point in all_coords:
+                        file.write(f"{point[0]}\t{point[1]}\t{point[2]}\n") #remplace le ',' par des 'Tab'
+                print(f"Data saved to {file}")
+                
+    fig = plt.figure()
+    fig.canvas.manager.toolmanager.add_tool('.txt', SaveFileDialogTool)
+    fig.canvas.manager.toolbar.add_tool('.txt', 'navigation', 1)
+
     coords = []
     attr_names = [attr for attr in dir(absorber) if attr.startswith('HitCoordsFrom')]
     coords_per_beam = [getattr(absorber, attr) for attr in attr_names]
@@ -177,19 +210,7 @@ def plot_xy(absorber):
     print("coords_per_beam", coords_per_beam)
     print("all_coords", all_coords)
     
-    # Save points to a text file (spot_diagramme.txt)
-    file_path = 'spot_diagramme.txt'
-
-    with open(file_path, 'w') as file:
-        for point in all_coords:
-            file.write(f"{point[0]}\t{point[1]}\t{point[2]}\n") #remplace le ',' par des 'Tab'
-
-    if os.path.isfile(file_path):
-        absolute_path = os.path.abspath(file_path)
-        print(f"Le fichier a été créé avec succès : {absolute_path}")
-    else:
-        print("Une erreur s'est produite lors de la création du fichier.")
-
+    
     x = -all_coords[:,0]  #récupère les valeurs de colonne 1
     y = all_coords[:,1]   #récupère les valeurs de colonne 2   
     
